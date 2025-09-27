@@ -1,12 +1,12 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import type { Player } from "@/types";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import type { Player } from '@/types';
 
 export function PlayerCard({ player, className }: { player: Player; className?: string }) {
   var content: React.ReactNode;
-  var primaryColor = "primary";
-  var secondaryColor = "secondary";
-  var tertiaryColor = "primary";
+  var primaryColor = 'primary';
+  var secondaryColor = 'secondary';
+  var tertiaryColor = 'primary';
 
   if (!player.club || !player.shirtNumber) {
     content = <div>N/A</div>;
@@ -29,7 +29,7 @@ export function PlayerCard({ player, className }: { player: Player; className?: 
   }
 
   return (
-    <Card className={cn("text-center", className)}>
+    <Card className={cn('text-center', className)}>
       <CardHeader>
         <CardTitle>{player.name}</CardTitle>
         <CardDescription>{player.club.name}</CardDescription>
