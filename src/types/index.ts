@@ -13,6 +13,6 @@ export interface Club {
 
 export interface NumberHistory {
   season: string;
+  club: Club;
   jerseyNumber: number;
-  club: string; // ID to club
 }
