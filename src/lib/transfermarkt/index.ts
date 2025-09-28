@@ -14,10 +14,18 @@ export async function getPlayer(id: string): Promise<Player> {
   return player;
 }
 
-export async function getClub(id: string): Promise<Club> {
+export async function getClub(id: string): Promise<Club | null> {
   const response = await fetch(`${TRANSFERMARKT_URL}/clubs/${id}/profile`);
-  const data = await response.json();
-  return data;
+  if (response.ok) {
+    const data = await response.json();
+    if (data && typeof data === 'object' && data.message === 'Internal Server Error') {
+      return null;
+    }
+
+    return data;
+  }
+
+  return null;
 }
 
 interface NumberHistoryResponse {
@@ -46,13 +54,9 @@ export async function getNumberHistory(id: string): Promise<NumberHistory[]> {
   const clubCache = new Map<string, Club>();
 
   for (const clubId of uniqueClubIds) {
-    try {
-      const club = await getClub(clubId);
+    const club = await getClub(clubId);
+    if (club) {
       clubCache.set(clubId, club);
-    } catch (error) {
-      console.error(`Failed to fetch club ${clubId}:`, error);
-      // If it's a 500 error, the club is invalid - don't add it to cache
-      // This will cause the entry to be filtered out later
     }
   }
 
@@ -61,7 +65,6 @@ export async function getNumberHistory(id: string): Promise<NumberHistory[]> {
     .map((entry) => {
       const club = clubCache.get(entry.club);
       if (!club) {
-        // Club not found in cache (likely due to 500 error) - return null to filter out
         return null;
       }
 
