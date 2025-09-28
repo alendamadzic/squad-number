@@ -4,7 +4,10 @@ export default function PlayerLayout(props: LayoutProps<'/player/[id]'>) {
   return (
     <>
       <Header />
-      <div className="flex flex-col gap-4">{props.children}</div>
+      <div className="flex flex-col gap-8">
+        {props.children}
+        {props.history}
+      </div>
     </>
   );
 }

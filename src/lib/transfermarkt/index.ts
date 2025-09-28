@@ -2,7 +2,7 @@
 
 import type { Club, NumberHistory, Player } from '@/types';
 
-const TRANSFERMARKT_URL = 'https://transfermarkt-api.fly.dev';
+const TRANSFERMARKT_URL = 'https://transfermarkt-api-xi.vercel.app';
 
 export async function getPlayer(id: string): Promise<Player> {
   const response = await fetch(`${TRANSFERMARKT_URL}/players/${id}/profile`);
@@ -42,55 +42,36 @@ export async function getNumberHistory(id: string): Promise<NumberHistory[]> {
   // Get unique club IDs to avoid duplicate API calls
   const uniqueClubIds = [...new Set(data.jerseyNumbers.map((entry) => entry.club))];
 
-  // Fetch club details with rate limiting (2 calls per 3 seconds = 1.5s delay)
+  // Fetch club details and filter out invalid clubs (500 errors)
   const clubCache = new Map<string, Club>();
-  let requestCount = 0;
 
   for (const clubId of uniqueClubIds) {
     try {
       const club = await getClub(clubId);
       clubCache.set(clubId, club);
-      requestCount++;
-
-      // Rate limit: 2 requests per 3 seconds (1.5s delay between requests)
-      // Skip delay on the last request
-      if (requestCount < uniqueClubIds.length) {
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-      }
     } catch (error) {
       console.error(`Failed to fetch club ${clubId}:`, error);
-      requestCount++;
-
-      // Still add delay even on failure to respect rate limits
-      if (requestCount < uniqueClubIds.length) {
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-      }
-      // Continue with other clubs even if one fails
+      // If it's a 500 error, the club is invalid - don't add it to cache
+      // This will cause the entry to be filtered out later
     }
   }
 
-  // Convert jersey numbers to NumberHistory format using cached club data
-  const numberHistory: NumberHistory[] = data.jerseyNumbers.map((entry) => {
-    const club = clubCache.get(entry.club);
-    if (!club) {
-      // Fallback: create a minimal club object if we couldn't fetch the full details
+  // Convert jersey numbers to NumberHistory format, filtering out entries with invalid clubs
+  const numberHistory: NumberHistory[] = data.jerseyNumbers
+    .map((entry) => {
+      const club = clubCache.get(entry.club);
+      if (!club) {
+        // Club not found in cache (likely due to 500 error) - return null to filter out
+        return null;
+      }
+
       return {
         season: entry.season,
-        club: {
-          id: entry.club,
-          name: `Club ${entry.club}`,
-          colors: [],
-        },
+        club: club,
         jerseyNumber: entry.jerseyNumber,
       };
-    }
-
-    return {
-      season: entry.season,
-      club: club,
-      jerseyNumber: entry.jerseyNumber,
-    };
-  });
+    })
+    .filter((entry): entry is NumberHistory => entry !== null);
 
   return numberHistory;
 }
