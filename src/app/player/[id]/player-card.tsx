@@ -3,14 +3,17 @@ import { cn } from '@/lib/utils';
 import type { Player } from '@/types';
 
 export function PlayerCard({ player, className }: { player: Player; className?: string }) {
-  var content: React.ReactNode;
+  var clubName: string;
+  var number: React.ReactNode;
   var primaryColor = 'primary';
   var secondaryColor = 'secondary';
   var tertiaryColor = 'primary';
 
   if (!player.club || !player.shirtNumber) {
-    content = <div>N/A</div>;
+    number = <div>N/A</div>;
+    clubName = '';
   } else {
+    clubName = player.club.name;
     // Get the colors from the club
     if (Array.isArray(player.club.colors) && player.club.colors.length > 0) {
       primaryColor = player.club.colors[0];
@@ -18,7 +21,7 @@ export function PlayerCard({ player, className }: { player: Player; className?: 
       tertiaryColor = player.club.colors[2];
     }
 
-    content = (
+    number = (
       <div
         style={{ color: primaryColor, backgroundColor: secondaryColor, borderColor: tertiaryColor }}
         className="rounded-lg border"
@@ -32,9 +35,9 @@ export function PlayerCard({ player, className }: { player: Player; className?: 
     <Card className={cn('text-center', className)}>
       <CardHeader>
         <CardTitle>{player.name}</CardTitle>
-        <CardDescription>{player.club.name}</CardDescription>
+        <CardDescription>{clubName}</CardDescription>
       </CardHeader>
-      <CardContent className="text-6xl font-bold p-6">{content}</CardContent>
+      <CardContent className="text-6xl font-bold p-6">{number}</CardContent>
     </Card>
   );
 }
