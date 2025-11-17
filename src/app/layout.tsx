@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
+import { Analytics } from '@vercel/analytics/next';
 import { Footer } from '@/components/footer';
 
 const geistSans = Geist({
@@ -35,6 +36,7 @@ export default function RootLayout({
           {children}
         </main>
         <Footer className="mt-auto mb-24" />
+        <Analytics />
       </body>
     </html>
   );
