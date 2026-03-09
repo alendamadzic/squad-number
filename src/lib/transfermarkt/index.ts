@@ -3,6 +3,9 @@ import type { Club, NumberHistory, Player } from '@/types';
 const TRANSFERMARKT_URL = 'https://transfermarkt-api-xi.vercel.app';
 const REVALIDATE = 3600; // 1 hour
 
+// Neutral fallback colors for national teams whose colors can't be fetched
+const INTERNATIONAL_COLORS = ['#4b5563', '#f9fafb', '#4b5563'];
+
 export async function getPlayer(id: string): Promise<Player | null> {
   try {
     const response = await fetch(`${TRANSFERMARKT_URL}/players/${id}/profile`, {
@@ -43,7 +46,65 @@ interface NumberHistoryResponse {
   jerseyNumbers: { season: string; club: string; jerseyNumber: number }[];
 }
 
-export async function getNumberHistory(id: string): Promise<NumberHistory[]> {
+interface ClubSearchResult {
+  id: string;
+  name: string;
+  colors?: string[];
+}
+
+// Resolve national team names by searching for each of the player's citizenships.
+// The /clubs/profile endpoint returns 500 for national teams, but /clubs/search works.
+async function resolveNationalTeams(
+  unresolvedIds: Set<string>,
+  playerId: string,
+): Promise<Map<string, Club>> {
+  const map = new Map<string, Club>();
+  if (unresolvedIds.size === 0) return map;
+
+  try {
+    const profileRes = await fetch(`${TRANSFERMARKT_URL}/players/${playerId}/profile`, {
+      next: { revalidate: REVALIDATE },
+    });
+    if (!profileRes.ok) return map;
+
+    const profile = await profileRes.json();
+    const citizenships: string[] = profile.citizenship ?? [];
+
+    // Search for national teams by each citizenship in parallel
+    const searchResults = await Promise.all(
+      citizenships.map((country) =>
+        fetch(`${TRANSFERMARKT_URL}/clubs/search/${encodeURIComponent(country)}`, {
+          next: { revalidate: REVALIDATE },
+        })
+          .then((r) => (r.ok ? r.json() : { results: [] }))
+          .catch(() => ({ results: [] })),
+      ),
+    );
+
+    for (const data of searchResults) {
+      for (const club of (data.results ?? []) as ClubSearchResult[]) {
+        if (unresolvedIds.has(club.id) && !map.has(club.id)) {
+          map.set(club.id, {
+            id: club.id,
+            name: club.name,
+            colors: club.colors?.length ? club.colors : INTERNATIONAL_COLORS,
+          });
+        }
+      }
+    }
+  } catch {
+    // Fall through — unresolved IDs will get the generic fallback below
+  }
+
+  return map;
+}
+
+export interface PlayerHistory {
+  clubs: NumberHistory[];
+  international: NumberHistory[];
+}
+
+export async function getNumberHistory(id: string): Promise<PlayerHistory> {
   const response = await fetch(`${TRANSFERMARKT_URL}/players/${id}/jersey_numbers`, {
     next: { revalidate: REVALIDATE },
   });
@@ -52,21 +113,51 @@ export async function getNumberHistory(id: string): Promise<NumberHistory[]> {
   }
 
   const data: NumberHistoryResponse = await response.json();
-  const uniqueClubIds = [...new Set(data.jerseyNumbers.map((e) => e.club))];
+  const uniqueIds = [...new Set(data.jerseyNumbers.map((e) => e.club))];
 
-  // Fetch all clubs in parallel
-  const clubResults = await Promise.all(uniqueClubIds.map((clubId) => getClub(clubId)));
+  // Fetch all club profiles in parallel
+  const clubResults = await Promise.all(uniqueIds.map((clubId) => getClub(clubId)));
+
   const clubCache = new Map<string, Club>();
-  for (let i = 0; i < uniqueClubIds.length; i++) {
+  const nationalTeamIds = new Set<string>();
+
+  for (let i = 0; i < uniqueIds.length; i++) {
     const club = clubResults[i];
-    if (club) clubCache.set(uniqueClubIds[i], club);
+    if (club) {
+      clubCache.set(uniqueIds[i], club);
+    } else {
+      nationalTeamIds.add(uniqueIds[i]);
+    }
   }
 
-  return data.jerseyNumbers
-    .map((entry) => {
-      const club = clubCache.get(entry.club);
-      if (!club) return null;
-      return { season: entry.season, club, jerseyNumber: entry.jerseyNumber };
-    })
-    .filter((entry): entry is NumberHistory => entry !== null);
+  // Attempt to resolve national team names from the player's citizenships
+  const nationalTeamCache = await resolveNationalTeams(nationalTeamIds, id);
+
+  // Anything still unresolved gets a generic fallback
+  for (const teamId of nationalTeamIds) {
+    if (!nationalTeamCache.has(teamId)) {
+      nationalTeamCache.set(teamId, {
+        id: teamId,
+        name: 'International',
+        colors: INTERNATIONAL_COLORS,
+      });
+    }
+  }
+
+  const clubs: NumberHistory[] = [];
+  const international: NumberHistory[] = [];
+
+  for (const entry of data.jerseyNumbers) {
+    const club = clubCache.get(entry.club);
+    if (club) {
+      clubs.push({ season: entry.season, club, jerseyNumber: entry.jerseyNumber });
+      continue;
+    }
+    const nationalTeam = nationalTeamCache.get(entry.club);
+    if (nationalTeam) {
+      international.push({ season: entry.season, club: nationalTeam, jerseyNumber: entry.jerseyNumber });
+    }
+  }
+
+  return { clubs, international };
 }

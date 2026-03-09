@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { PlayerCard, PlayerCardSkeleton } from './player-card';
-import { PlayerHistory, PlayerHistorySkeleton } from './player-history';
+import { PlayerHistory, PlayerHistorySkeleton } from './player-history-server';
 
 export default function PlayerPage({ params }: { params: Promise<{ id: string }> }) {
   const idPromise = params.then((p) => p.id);
