@@ -1,70 +1,60 @@
 import { notFound } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getPlayer } from '@/lib/transfermarkt';
-import { cn } from '@/lib/utils';
 
-export async function PlayerCard({ playerId, className }: { playerId: Promise<string>; className?: string }) {
-  let clubName: string;
-  let number: React.ReactNode;
-  let primaryColor = 'primary';
-  let secondaryColor = 'secondary';
-  let tertiaryColor = 'primary';
-
+export async function PlayerCard({ playerId }: { playerId: Promise<string> }) {
   const player = await getPlayer(await playerId);
-  if (!player) {
-    return notFound();
-  }
+  if (!player) return notFound();
 
-  if (!player.club || !player.shirtNumber) {
-    number = <div>N/A</div>;
-    clubName = '';
-  } else {
-    clubName = player.club.name;
-    // Get the colors from the club
-    if (Array.isArray(player.club.colors) && player.club.colors.length > 0) {
-      primaryColor = player.club.colors[0];
-      secondaryColor = player.club.colors[1];
-      tertiaryColor = player.club.colors[2];
-    }
-
-    number = (
-      <div
-        style={{ color: primaryColor, backgroundColor: secondaryColor, borderColor: tertiaryColor }}
-        className="rounded-lg border"
-      >
-        {player.shirtNumber}
-      </div>
-    );
-  }
+  const hasNumber = player.club && player.shirtNumber;
+  const colors = player.club?.colors ?? [];
+  const primaryColor = colors[0] ?? 'currentColor';
+  const secondaryColor = colors[1] ?? 'transparent';
+  const borderColor = colors[2] ?? colors[0] ?? 'transparent';
 
   return (
-    <Card className={cn('text-center', className)}>
-      <CardHeader>
-        <CardTitle>{player.name}</CardTitle>
-        <CardDescription>{clubName}</CardDescription>
-      </CardHeader>
-      <CardContent className="text-6xl font-bold p-6">{number}</CardContent>
-    </Card>
+    <div className="overflow-hidden rounded-[--radius-lg] border border-border">
+      {/* Number hero */}
+      <div
+        className="flex items-center justify-center px-8 py-12"
+        style={{ backgroundColor: hasNumber ? secondaryColor : undefined }}
+      >
+        {hasNumber ? (
+          <span
+            className="text-[7rem] sm:text-[9rem] font-black leading-none tabular-nums select-none"
+            style={{ color: primaryColor }}
+          >
+            {player.shirtNumber}
+          </span>
+        ) : (
+          <span className="text-5xl font-light text-muted-foreground select-none">—</span>
+        )}
+      </div>
+
+      {/* Player info */}
+      <div
+        className="px-6 py-4 border-t border-border"
+        style={{ borderColor: hasNumber ? borderColor : undefined }}
+      >
+        <p className="text-lg font-bold leading-tight">{player.name}</p>
+        {player.club?.name && (
+          <p className="text-sm text-muted-foreground mt-0.5">{player.club.name}</p>
+        )}
+      </div>
+    </div>
   );
 }
 
 export function PlayerCardSkeleton() {
   return (
-    <Card className="text-center">
-      <CardHeader>
-        <CardTitle>
-          <Skeleton className="h-6 w-48 mx-auto" />
-        </CardTitle>
-        <CardDescription>
-          <Skeleton className="h-4 w-32 mx-auto" />
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="text-6xl font-bold p-6">
-        <div className="flex justify-center items-center">
-          <Skeleton className="h-16 w-20 rounded-lg" />
-        </div>
-      </CardContent>
-    </Card>
+    <div className="overflow-hidden rounded-[--radius-lg] border border-border">
+      <div className="flex items-center justify-center px-8 py-12 bg-muted/40">
+        <Skeleton className="h-36 w-48 rounded-md" />
+      </div>
+      <div className="px-6 py-4 border-t border-border">
+        <Skeleton className="h-5 w-40 mb-1.5" />
+        <Skeleton className="h-4 w-28" />
+      </div>
+    </div>
   );
 }

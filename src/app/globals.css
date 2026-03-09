@@ -44,7 +44,7 @@
 }
 
 body {
-  font-family: Geist, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Helvetica, sans-serif;
 }
 
 :root {

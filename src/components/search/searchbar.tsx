@@ -40,3 +40,5 @@ export const Searchbar = forwardRef<HTMLInputElement, SearchbarProps>(
     );
   },
 );
+
+Searchbar.displayName = 'Searchbar';
