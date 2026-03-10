@@ -66,12 +66,14 @@ export function PlayerSearch({ className }: { className?: string }) {
     }
   };
 
-  // Prefetch player page on keyboard/hover selection
+  // Prefetch all visible results as soon as the dropdown opens
   useEffect(() => {
-    if (isOpen && results[selectedIndex]) {
-      router.prefetch(`/player/${results[selectedIndex].id}`);
+    if (isOpen && results.length > 0) {
+      for (const player of results) {
+        router.prefetch(`/player/${player.id}`);
+      }
     }
-  }, [selectedIndex, isOpen, results, router]);
+  }, [results, isOpen, router]);
 
   const handlePlayerSelect = (player: Player) => {
     clearSearch();

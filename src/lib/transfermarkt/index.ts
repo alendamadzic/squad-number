@@ -56,6 +56,19 @@ interface ClubSearchResult {
   colors?: string[];
 }
 
+// Cached per-country search so identical citizenship lookups across players share a result.
+async function searchClubsByCountry(country: string): Promise<ClubSearchResult[]> {
+  'use cache';
+  cacheLife('days');
+  cacheTag(`club-search-${country.toLowerCase()}`);
+  try {
+    const r = await fetch(`${TRANSFERMARKT_URL}/clubs/search/${encodeURIComponent(country)}`);
+    return r.ok ? ((await r.json()).results ?? []) : [];
+  } catch {
+    return [];
+  }
+}
+
 // Resolve national team names by searching for each of the player's citizenships.
 // The /clubs/profile endpoint returns 500 for national teams, but /clubs/search works.
 async function resolveNationalTeams(unresolvedIds: Set<string>, citizenships: string[]): Promise<Map<string, Club>> {
@@ -63,17 +76,10 @@ async function resolveNationalTeams(unresolvedIds: Set<string>, citizenships: st
   if (unresolvedIds.size === 0 || citizenships.length === 0) return map;
 
   try {
-    // Search for national teams by each citizenship in parallel
-    const searchResults = await Promise.all(
-      citizenships.map((country) =>
-        fetch(`${TRANSFERMARKT_URL}/clubs/search/${encodeURIComponent(country)}`)
-          .then((r) => (r.ok ? r.json() : { results: [] }))
-          .catch(() => ({ results: [] })),
-      ),
-    );
+    const searchResults = await Promise.all(citizenships.map(searchClubsByCountry));
 
-    for (const data of searchResults) {
-      for (const club of (data.results ?? []) as ClubSearchResult[]) {
+    for (const results of searchResults) {
+      for (const club of results) {
         if (unresolvedIds.has(club.id) && !map.has(club.id)) {
           map.set(club.id, {
             id: club.id,
@@ -115,8 +121,12 @@ export async function getNumberHistory(id: string): Promise<PlayerHistory> {
     const citizenships: string[] = profileRes.ok ? ((await profileRes.json()).citizenship ?? []) : [];
     const uniqueIds = [...new Set(data.jerseyNumbers.map((e) => e.club))];
 
-    // Fetch all club profiles in parallel
-    const clubResults = await Promise.all(uniqueIds.map((clubId) => getClub(clubId)));
+    // Run club fetches and citizenship searches concurrently — citizenship searches
+    // don't depend on club results, so no need to wait for clubs first.
+    const [clubResults, allNationalTeamResults] = await Promise.all([
+      Promise.all(uniqueIds.map((clubId) => getClub(clubId))),
+      resolveNationalTeams(new Set(uniqueIds), citizenships),
+    ]);
 
     const clubCache = new Map<string, Club>();
     const nationalTeamIds = new Set<string>();
@@ -130,8 +140,11 @@ export async function getNumberHistory(id: string): Promise<PlayerHistory> {
       }
     }
 
-    // Attempt to resolve national team names from the player's citizenships
-    const nationalTeamCache = await resolveNationalTeams(nationalTeamIds, citizenships);
+    // Filter the pre-fetched national team map to only IDs that getClub couldn't resolve.
+    const nationalTeamCache = new Map<string, Club>();
+    for (const [id, club] of allNationalTeamResults) {
+      if (nationalTeamIds.has(id)) nationalTeamCache.set(id, club);
+    }
 
     // Anything still unresolved gets a generic fallback
     for (const teamId of nationalTeamIds) {
