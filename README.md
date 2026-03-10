@@ -1,104 +1,118 @@
-# Squad Number 🔢
+# squad number.
 
-A fast and intuitive web application that allows you to quickly search and find any professional football player's current squad number. Built with Next.js and powered by Transfermarkt data.
+Look up any professional football player's squad number — displayed in their club's actual kit colors.
 
-## 🎯 Purpose
+Built with Next.js 16 and powered by Transfermarkt data.
 
-Ever wondered what number your favorite player wears? Squad Number solves this problem by providing instant access to current squad numbers for professional football players worldwide. Simply search for a player's name and get their current jersey number along with their club information.
+## What it does
 
-## ✨ Features
+Search for a player by name → get their current jersey number rendered in their club's primary and secondary colors, plus a full season-by-season history of every number they've worn across club and international career.
 
-- **Instant Search**: Fast, real-time player search with autocomplete
-- **Current Squad Numbers**: Get the most up-to-date jersey numbers
+## Design
 
-## 🚀 Getting Started
+Neo-brutalist "Matchday Pitch" aesthetic: real grass background, white boxy cards with hard black shadows, sharp corners, monospace typography. The jersey number is displayed large in the club's actual colors fetched directly from Transfermarkt.
 
-### Prerequisites
+## Tech stack
 
-- Node.js 18+ 
-- npm or yarn
+| | |
+|---|---|
+| Framework | Next.js 16.0.7 (App Router, `cacheComponents: true`) |
+| Language | TypeScript |
+| UI | React 19, shadcn/ui (new-york), Tailwind CSS 4 |
+| Icons | Lucide React |
+| Linter/Formatter | Biome |
+| Package manager | Bun |
+| Analytics | Vercel Analytics |
+| Hosting | Vercel |
+| Data | Self-hosted Transfermarkt API (`transfermarkt-api-xi.vercel.app`) |
 
-### Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/squad-number.git
-cd squad-number
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Start the development server:
-```bash
-npm run dev
-```
-
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
-
-## 🛠️ Tech Stack
-
-- **Framework**: [Next.js 15](https://nextjs.org/) with App Router
-- **Language**: TypeScript
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **UI Components**: [Radix UI](https://www.radix-ui.com/)
-- **Icons**: [Lucide React](https://lucide.dev/)
-- **Linting**: [Biome](https://biomejs.dev/)
-- **Data Source**: [Transfermarkt API](https://transfermarkt-api.fly.dev/)
-
-## 📁 Project Structure
+## Project structure
 
 ```
 src/
-├── app/                    # Next.js App Router pages
-│   ├── player/[id]/       # Dynamic player detail pages
-│   └── page.tsx           # Home page
-├── components/            # Reusable UI components
-│   ├── search/           # Search-related components
-│   └── ui/               # Base UI components
-├── lib/                  # Utility functions and API clients
-│   └── transfermarkt/    # Transfermarkt API integration
-└── types/                # TypeScript type definitions
+├── app/
+│   ├── api/search/route.ts          # Search Route Handler (60s revalidate)
+│   ├── player/[id]/
+│   │   ├── page.tsx                 # Player detail page
+│   │   ├── player-card.tsx          # Jersey number hero card
+│   │   ├── player-history.tsx       # History list + tab UI (client)
+│   │   └── player-history-server.tsx# Suspense wrapper for history
+│   └── page.tsx                     # Home / search page
+├── components/
+│   ├── search/
+│   │   ├── player-search.tsx        # Search bar with '/' shortcut
+│   │   ├── searchbar.tsx
+│   │   ├── search-results.tsx
+│   │   └── search-result-item.tsx
+│   ├── footer.tsx
+│   ├── header.tsx
+│   └── hero-title.tsx
+├── lib/
+│   └── transfermarkt/index.ts       # All data fetching (server-only, 'use cache')
+├── styles/                          # (reserved)
+└── types/                           # Shared TypeScript types
 ```
 
-## 🔧 Available Scripts
+## Getting started
 
-- `npm run dev` - Start development server with Turbopack
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run Biome linter
-- `npm run lint:fix` - Fix linting issues automatically
-- `npm run format` - Format code with Biome
+**Prerequisites:** Bun (or Node.js 18+)
 
-## 🎨 Design Principles
+```bash
+# Install dependencies
+bun install
 
-- **Minimal & Clean**: Focus on essential functionality without clutter
-- **Fast & Responsive**: Optimized for speed and mobile-first design
-- **Accessible**: Built with accessibility in mind
-- **Type-Safe**: Full TypeScript coverage for better developer experience
+# Run dev server
+bun dev
+```
 
-## 🔍 How It Works
+Open [http://localhost:3000](http://localhost:3000).
 
-1. **Search**: Users type a player's name in the search bar
-2. **API Call**: The app queries the Transfermarkt API for matching players
-3. **Results**: Display search results with player names and clubs
-4. **Selection**: Click or navigate to a player to view their details
-5. **Details**: Show the player's current squad number and club information
+## Scripts
 
-## 🌐 API Integration
+```bash
+bun dev          # Development server
+bun build        # Production build
+bun start        # Production server
+bun lint         # Biome check
+bun lint:fix     # Biome check --write
+bun format       # Biome format --write
+```
 
-The app integrates with the Transfermarkt API to fetch:
-- Player search results
-- Player profile information
-- Club details and colors
-- Current squad numbers
+## Data fetching
 
+Everything is server-side with Next.js 16 Cache Components (`'use cache'` directive):
 
-## 🙏 Acknowledgments
+- **Player profile** — `getPlayer(id)` — `cacheLife('hours')`
+- **Club profile + colors** — `getClub(id)` — `cacheLife('hours')`
+- **Jersey number history** — `getNumberHistory(id)` — `cacheLife('hours')`
+- **Search** — Route Handler — `revalidate: 60`
 
-- [Transfermarkt](https://www.transfermarkt.com/) for providing comprehensive football data
-- [Transfermarkt API](https://transfermarkt-api.fly.dev/) for the free API service
-- The Next.js team for the amazing framework
-- All contributors and users who help improve this project
+National teams (e.g. Argentina, France) return HTTP 500 from the club profile endpoint. These are resolved by fetching the player's citizenships and searching for matching clubs, then falling back to neutral colors `['#4b5563', '#f9fafb', '#4b5563']`.
+
+## Key constraints
+
+`cacheComponents: true` in `next.config.ts` enables the Next.js 16 Cache Components feature. This has two implications for the codebase:
+
+1. **No `export const runtime = 'edge'`** on Route Handlers — incompatible with cache components.
+2. **No `await params` at the page level** — params must be passed as a `Promise<string>` down to async server components inside Suspense boundaries.
+
+Pattern used throughout:
+```ts
+// page.tsx
+const idPromise = params.then(p => p.id)
+// pass idPromise to an async server component as a prop
+```
+
+## Player history
+
+`getNumberHistory` returns `{ clubs: NumberHistory[], international: NumberHistory[] }`.
+
+On the player page, `HistorySection` renders:
+- Club tab by default
+- International tab added only when `international.length > 0`
+- Each row shows season, jersey number in the club's primary color, and club name
+
+## Acknowledgements
+
+- [Transfermarkt](https://www.transfermarkt.com/) for the football data
+- [Transfermarkt API](https://github.com/felipeall/transfermarkt-api) for the open-source API wrapper
