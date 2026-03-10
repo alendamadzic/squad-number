@@ -44,76 +44,12 @@
 }
 
 body {
-  font-family: Geist, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Helvetica, sans-serif;
 }
 
-:root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.141 0.005 285.823);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.141 0.005 285.823);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.21 0.006 285.885);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.21 0.006 285.885);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.705 0.015 286.067);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-primary: oklch(0.21 0.006 285.885);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.705 0.015 286.067);
-}
-
-.dark {
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.21 0.006 285.885);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.21 0.006 285.885);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.92 0.004 286.32);
-  --primary-foreground: oklch(0.21 0.006 285.885);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.552 0.016 285.938);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.552 0.016 285.938);
+::selection {
+  background: #2e7d33;
+  color: #ffffff;
 }
 
 @layer base {
@@ -123,4 +59,219 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* ================================================================
+   MATCHDAY PITCH — Neo-brutalist design
+   White boxy cards, hard shadows, sharp corners on floodlit grass.
+   Monospace typography, lawn.video inspired.
+   ================================================================ */
+
+/* ---- Core color tokens ---- */
+
+:root {
+  --background: #2e7d33;
+  --foreground: #1a1a1a;
+  --card: #ffffff;
+  --card-foreground: #1a1a1a;
+  --popover: #ffffff;
+  --popover-foreground: #1a1a1a;
+  --primary: #1a1a1a;
+  --primary-foreground: #f0f0e8;
+  --secondary: #e8e8e0;
+  --secondary-foreground: #1a1a1a;
+  --muted: #e8e8e0;
+  --muted-foreground: #666666;
+  --accent: #1a1a1a;
+  --accent-foreground: #f0f0e8;
+  --border: #1a1a1a;
+  --input: #ffffff;
+  --ring: #1a1a1a;
+  --radius: 0px;
+}
+
+/* ---- Real grass background ---- */
+
+main,
+footer {
+  position: relative;
+  z-index: 1;
+}
+
+body {
+  background: url("/background.png") center center / cover no-repeat fixed;
+}
+
+/* ---- Text on grass (outside cards) — must be white ---- */
+
+h1,
+h2 {
+  color: #ffffff !important;
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.25);
+}
+
+/* Back link on grass */
+a.text-muted-foreground,
+a .text-muted-foreground {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+a.text-muted-foreground:hover {
+  color: #ffffff !important;
+}
+
+/* Header branding on grass */
+header span,
+header a {
+  color: #ffffff !important;
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* ---- Cards: White, boxy, hard shadows ---- */
+
+.squad-card {
+  background: #ffffff !important;
+  border: 2px solid #1a1a1a !important;
+  border-radius: 0 !important;
+  box-shadow: 6px 6px 0px 0px #1a1a1a !important;
+  overflow: hidden !important;
+}
+
+.squad-hero {
+  position: relative;
+  border-radius: 0 !important;
+}
+.squad-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.08);
+  pointer-events: none;
+}
+
+.squad-number {
+  position: relative;
+  z-index: 1;
+  text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.25);
+  font-weight: 900 !important;
+}
+
+.squad-info {
+  background: #ffffff !important;
+  border-color: #1a1a1a !important;
+  border-radius: 0 !important;
+}
+
+.squad-info p {
+  color: #1a1a1a !important;
+}
+
+.squad-info p:last-child {
+  color: #555555 !important;
+}
+
+/* ---- History list ---- */
+
+.flex.divide-y {
+  background: #ffffff !important;
+  border: 2px solid #1a1a1a !important;
+  border-radius: 0 !important;
+  box-shadow: 6px 6px 0px 0px #1a1a1a !important;
+}
+
+.flex.divide-y > div {
+  border-color: #e0e0e0 !important;
+}
+
+.flex.divide-y span {
+  color: #1a1a1a !important;
+}
+
+.flex.divide-y .text-muted-foreground {
+  color: #666666 !important;
+}
+
+/* ---- Tabs: boxy, dark readable text ---- */
+
+.bg-muted {
+  background: #e8e8e0 !important;
+  border: 2px solid #1a1a1a !important;
+  border-radius: 0 !important;
+  box-shadow: 3px 3px 0px 0px #1a1a1a !important;
+}
+
+.bg-muted button {
+  border-radius: 0 !important;
+  color: #1a1a1a !important;
+  font-weight: 600 !important;
+}
+
+.bg-muted button.bg-background {
+  background: #ffffff !important;
+  color: #1a1a1a !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* ---- Search input: chunky ---- */
+
+input[type="search"] {
+  background: #ffffff !important;
+  border: 2px solid #1a1a1a !important;
+  border-radius: 0 !important;
+  color: #1a1a1a !important;
+  box-shadow: 4px 4px 0px 0px #1a1a1a !important;
+  font-family: var(--font-geist-mono), ui-monospace, monospace !important;
+  font-size: 1.1rem !important;
+  padding: 1.25rem 2.5rem !important;
+}
+
+input[type="search"]::placeholder {
+  color: #888888 !important;
+}
+
+input[type="search"]:focus {
+  box-shadow: 4px 4px 0px 0px #2d5a2d !important;
+  border-color: #2d5a2d !important;
+}
+
+/* Search icon — adjust for bigger input */
+input[type="search"] + .pointer-events-none,
+input[type="search"] ~ .pointer-events-none:first-of-type {
+  color: #888888 !important;
+}
+
+/* ---- Search results dropdown ---- */
+
+.absolute.overflow-auto.rounded-md {
+  background: #ffffff !important;
+  border: 2px solid #1a1a1a !important;
+  border-radius: 0 !important;
+  box-shadow: 6px 6px 0px 0px #1a1a1a !important;
+}
+
+/* All search result items — dark text */
+.absolute.overflow-auto.rounded-md button {
+  color: #1a1a1a !important;
+  border-radius: 0 !important;
+}
+
+.absolute.overflow-auto.rounded-md .text-muted-foreground {
+  color: #666666 !important;
+}
+
+/* Selected/hovered search result — invert to dark bg, white text */
+.absolute.overflow-auto.rounded-md button.bg-accent,
+.absolute.overflow-auto.rounded-md button:hover {
+  background: #1a1a1a !important;
+  color: #ffffff !important;
+}
+
+.absolute.overflow-auto.rounded-md button.bg-accent .text-muted-foreground,
+.absolute.overflow-auto.rounded-md button:hover .text-muted-foreground {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* ---- All buttons: sharp corners ---- */
+button {
+  border-radius: 0 !important;
 }

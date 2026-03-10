@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import type { KeyboardEvent } from 'react';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import type { Player } from '@/types';
 import { SearchResults } from './search-results';
@@ -20,7 +20,6 @@ export function PlayerSearch({ className }: { className?: string }) {
     isOpen,
     isLoading,
     setQuery,
-    handleSearch,
     navigateResults,
     getSelectedPlayer,
     closeResults,
@@ -28,19 +27,22 @@ export function PlayerSearch({ className }: { className?: string }) {
     setSelectedIndexValue,
   } = usePlayerSearch();
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setQuery(e.target.value);
-  };
+  // Press "/" anywhere to focus the search input
+  useEffect(() => {
+    const handleGlobalKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === '/' && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', handleGlobalKey);
+    return () => document.removeEventListener('keydown', handleGlobalKey);
+  }, []);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (!isOpen || results.length === 0) {
-      if (e.key === 'Enter' && query.trim()) {
-        // If no results but user presses enter, try to search anyway
-        handleSearch();
-      }
+    if (!isOpen || !results.length) {
       return;
     }
-
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
@@ -52,10 +54,8 @@ export function PlayerSearch({ className }: { className?: string }) {
         break;
       case 'Enter': {
         e.preventDefault();
-        const selectedPlayer = getSelectedPlayer();
-        if (selectedPlayer) {
-          handlePlayerSelect(selectedPlayer);
-        }
+        const selected = getSelectedPlayer();
+        if (selected) handlePlayerSelect(selected);
         break;
       }
       case 'Escape':
@@ -65,20 +65,16 @@ export function PlayerSearch({ className }: { className?: string }) {
     }
   };
 
+  // Prefetch player page on keyboard/hover selection
+  useEffect(() => {
+    if (isOpen && results[selectedIndex]) {
+      router.prefetch(`/player/${results[selectedIndex].id}`);
+    }
+  }, [selectedIndex, isOpen, results, router]);
+
   const handlePlayerSelect = (player: Player) => {
     clearSearch();
     router.push(`/player/${player.id}`);
-  };
-
-  const handleInputFocus = () => {
-    if (results.length > 0) {
-      // Results will be shown automatically by the hook when results exist
-    }
-  };
-
-  const handleInputBlur = () => {
-    // Delay closing to allow clicks on results
-    setTimeout(() => closeResults(), 150);
   };
 
   return (
@@ -86,13 +82,11 @@ export function PlayerSearch({ className }: { className?: string }) {
       <Searchbar
         ref={inputRef}
         value={query}
-        onChange={handleInputChange}
+        onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
-        onFocus={handleInputFocus}
-        onBlur={handleInputBlur}
+        onBlur={() => setTimeout(closeResults, 150)}
         isLoading={isLoading}
       />
-
       {isOpen && (
         <SearchResults
           results={results}
