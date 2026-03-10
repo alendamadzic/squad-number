@@ -65,10 +65,16 @@ export function PlayerSearch({ className }: { className?: string }) {
     }
   };
 
+  // Prefetch player page on keyboard/hover selection
+  useEffect(() => {
+    if (isOpen && results[selectedIndex]) {
+      router.prefetch(`/player/${results[selectedIndex].id}`);
+    }
+  }, [selectedIndex, isOpen, results, router]);
+
   const handlePlayerSelect = (player: Player) => {
     clearSearch();
     router.push(`/player/${player.id}`);
-    router.prefetch(`/player/${player.id}`);
   };
 
   return (
@@ -78,7 +84,6 @@ export function PlayerSearch({ className }: { className?: string }) {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
-        onFocus={() => {}}
         onBlur={() => setTimeout(closeResults, 150)}
         isLoading={isLoading}
       />

@@ -7,7 +7,7 @@ interface SearchbarProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onKeyDown: (e: KeyboardEvent<HTMLInputElement>) => void;
-  onFocus: () => void;
+  onFocus?: () => void;
   onBlur: () => void;
   isLoading: boolean;
   placeholder?: string;

@@ -54,19 +54,11 @@ interface ClubSearchResult {
 
 // Resolve national team names by searching for each of the player's citizenships.
 // The /clubs/profile endpoint returns 500 for national teams, but /clubs/search works.
-async function resolveNationalTeams(unresolvedIds: Set<string>, playerId: string): Promise<Map<string, Club>> {
+async function resolveNationalTeams(unresolvedIds: Set<string>, citizenships: string[]): Promise<Map<string, Club>> {
   const map = new Map<string, Club>();
-  if (unresolvedIds.size === 0) return map;
+  if (unresolvedIds.size === 0 || citizenships.length === 0) return map;
 
   try {
-    const profileRes = await fetch(`${TRANSFERMARKT_URL}/players/${playerId}/profile`, {
-      next: { revalidate: REVALIDATE },
-    });
-    if (!profileRes.ok) return map;
-
-    const profile = await profileRes.json();
-    const citizenships: string[] = profile.citizenship ?? [];
-
     // Search for national teams by each citizenship in parallel
     const searchResults = await Promise.all(
       citizenships.map((country) =>
@@ -102,14 +94,22 @@ export interface PlayerHistory {
 }
 
 export async function getNumberHistory(id: string): Promise<PlayerHistory> {
-  const response = await fetch(`${TRANSFERMARKT_URL}/players/${id}/jersey_numbers`, {
-    next: { revalidate: REVALIDATE },
-  });
+  // Fetch jersey numbers and player profile in parallel
+  const [response, profileRes] = await Promise.all([
+    fetch(`${TRANSFERMARKT_URL}/players/${id}/jersey_numbers`, {
+      next: { revalidate: REVALIDATE },
+    }),
+    fetch(`${TRANSFERMARKT_URL}/players/${id}/profile`, {
+      next: { revalidate: REVALIDATE },
+    }),
+  ]);
+
   if (!response.ok) {
     throw new Error(`Failed to fetch jersey numbers: ${response.status} ${response.statusText}`);
   }
 
   const data: NumberHistoryResponse = await response.json();
+  const citizenships: string[] = profileRes.ok ? ((await profileRes.json()).citizenship ?? []) : [];
   const uniqueIds = [...new Set(data.jerseyNumbers.map((e) => e.club))];
 
   // Fetch all club profiles in parallel
@@ -128,7 +128,7 @@ export async function getNumberHistory(id: string): Promise<PlayerHistory> {
   }
 
   // Attempt to resolve national team names from the player's citizenships
-  const nationalTeamCache = await resolveNationalTeams(nationalTeamIds, id);
+  const nationalTeamCache = await resolveNationalTeams(nationalTeamIds, citizenships);
 
   // Anything still unresolved gets a generic fallback
   for (const teamId of nationalTeamIds) {
