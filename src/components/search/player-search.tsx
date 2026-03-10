@@ -13,8 +13,19 @@ export function PlayerSearch({ className }: { className?: string }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { query, results, selectedIndex, isOpen, isLoading, setQuery, navigateResults, getSelectedPlayer, closeResults, clearSearch, setSelectedIndexValue } =
-    usePlayerSearch();
+  const {
+    query,
+    results,
+    selectedIndex,
+    isOpen,
+    isLoading,
+    setQuery,
+    navigateResults,
+    getSelectedPlayer,
+    closeResults,
+    clearSearch,
+    setSelectedIndexValue,
+  } = usePlayerSearch();
 
   // Press "/" anywhere to focus the search input
   useEffect(() => {

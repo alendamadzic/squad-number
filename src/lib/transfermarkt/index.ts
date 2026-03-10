@@ -54,10 +54,7 @@ interface ClubSearchResult {
 
 // Resolve national team names by searching for each of the player's citizenships.
 // The /clubs/profile endpoint returns 500 for national teams, but /clubs/search works.
-async function resolveNationalTeams(
-  unresolvedIds: Set<string>,
-  playerId: string,
-): Promise<Map<string, Club>> {
+async function resolveNationalTeams(unresolvedIds: Set<string>, playerId: string): Promise<Map<string, Club>> {
   const map = new Map<string, Club>();
   if (unresolvedIds.size === 0) return map;
 

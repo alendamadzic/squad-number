@@ -24,9 +24,7 @@ export const SearchResultItem = forwardRef<HTMLButtonElement, SearchResultItemPr
       >
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-medium truncate">{player.name}</span>
-          {player.position && (
-            <span className="text-xs text-muted-foreground shrink-0">{player.position}</span>
-          )}
+          {player.position && <span className="text-xs text-muted-foreground shrink-0">{player.position}</span>}
         </div>
         <span className="text-xs text-muted-foreground shrink-0 truncate max-w-[8rem]">{player.club.name}</span>
       </button>

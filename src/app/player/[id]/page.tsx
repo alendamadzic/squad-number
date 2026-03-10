@@ -1,6 +1,6 @@
+import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { ChevronLeft } from 'lucide-react';
 import { PlayerCard, PlayerCardSkeleton } from './player-card';
 import { PlayerHistory, PlayerHistorySkeleton } from './player-history-server';
 
