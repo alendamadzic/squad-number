@@ -2,8 +2,8 @@ import { notFound } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getPlayer } from '@/lib/transfermarkt';
 
-export async function PlayerCard({ playerId }: { playerId: Promise<string> }) {
-  const player = await getPlayer(await playerId);
+export async function PlayerCard({ playerId }: { playerId: string }) {
+  const player = await getPlayer(playerId);
   if (!player) return notFound();
 
   const hasNumber = player.club && player.shirtNumber;

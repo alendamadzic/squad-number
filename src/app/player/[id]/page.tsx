@@ -3,20 +3,27 @@ import { PlayerCard, PlayerCardSkeleton } from './player-card';
 import { PlayerHistory, PlayerHistorySkeleton } from './player-history-server';
 
 export default function PlayerPage({ params }: { params: Promise<{ id: string }> }) {
-  const idPromise = params.then((p) => p.id);
-
   return (
     <div className="flex flex-col gap-10">
       <Suspense fallback={<PlayerCardSkeleton />}>
-        <PlayerCard playerId={idPromise} />
+        <PlayerCardWrapper params={params} />
       </Suspense>
 
       <div>
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">History</h2>
         <Suspense fallback={<PlayerHistorySkeleton />}>
-          <PlayerHistory playerId={idPromise} />
+          <PlayerHistoryWrapper params={params} />
         </Suspense>
       </div>
     </div>
   );
+}
+
+async function PlayerCardWrapper({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <PlayerCard playerId={id} />;
+}
+
+async function PlayerHistoryWrapper({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <PlayerHistory playerId={id} />;
 }

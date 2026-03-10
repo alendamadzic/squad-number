@@ -1,16 +1,18 @@
+import { cacheLife, cacheTag } from 'next/cache';
 import type { Club, NumberHistory, Player } from '@/types';
 
 const TRANSFERMARKT_URL = 'https://transfermarkt-api-xi.vercel.app';
-const REVALIDATE = 3600; // 1 hour
 
 // Neutral fallback colors for national teams whose colors can't be fetched
 const INTERNATIONAL_COLORS = ['#4b5563', '#f9fafb', '#4b5563'];
 
 export async function getPlayer(id: string): Promise<Player | null> {
+  'use cache';
+  cacheLife('hours');
+  cacheTag(`player-${id}`);
+
   try {
-    const response = await fetch(`${TRANSFERMARKT_URL}/players/${id}/profile`, {
-      next: { revalidate: REVALIDATE },
-    });
+    const response = await fetch(`${TRANSFERMARKT_URL}/players/${id}/profile`);
     if (!response.ok) return null;
 
     const player = await response.json();
@@ -26,10 +28,12 @@ export async function getPlayer(id: string): Promise<Player | null> {
 }
 
 export async function getClub(id: string): Promise<Club | null> {
+  'use cache';
+  cacheLife('hours');
+  cacheTag(`club-${id}`);
+
   try {
-    const response = await fetch(`${TRANSFERMARKT_URL}/clubs/${id}/profile`, {
-      next: { revalidate: REVALIDATE },
-    });
+    const response = await fetch(`${TRANSFERMARKT_URL}/clubs/${id}/profile`);
     if (!response.ok) return null;
 
     const data = await response.json();
@@ -62,9 +66,7 @@ async function resolveNationalTeams(unresolvedIds: Set<string>, citizenships: st
     // Search for national teams by each citizenship in parallel
     const searchResults = await Promise.all(
       citizenships.map((country) =>
-        fetch(`${TRANSFERMARKT_URL}/clubs/search/${encodeURIComponent(country)}`, {
-          next: { revalidate: REVALIDATE },
-        })
+        fetch(`${TRANSFERMARKT_URL}/clubs/search/${encodeURIComponent(country)}`)
           .then((r) => (r.ok ? r.json() : { results: [] }))
           .catch(() => ({ results: [] })),
       ),
@@ -94,67 +96,71 @@ export interface PlayerHistory {
 }
 
 export async function getNumberHistory(id: string): Promise<PlayerHistory> {
-  // Fetch jersey numbers and player profile in parallel
-  const [response, profileRes] = await Promise.all([
-    fetch(`${TRANSFERMARKT_URL}/players/${id}/jersey_numbers`, {
-      next: { revalidate: REVALIDATE },
-    }),
-    fetch(`${TRANSFERMARKT_URL}/players/${id}/profile`, {
-      next: { revalidate: REVALIDATE },
-    }),
-  ]);
+  'use cache';
+  cacheLife('hours');
+  cacheTag(`player-history-${id}`);
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch jersey numbers: ${response.status} ${response.statusText}`);
-  }
+  try {
+    // Fetch jersey numbers and player profile in parallel
+    const [response, profileRes] = await Promise.all([
+      fetch(`${TRANSFERMARKT_URL}/players/${id}/jersey_numbers`),
+      fetch(`${TRANSFERMARKT_URL}/players/${id}/profile`),
+    ]);
 
-  const data: NumberHistoryResponse = await response.json();
-  const citizenships: string[] = profileRes.ok ? ((await profileRes.json()).citizenship ?? []) : [];
-  const uniqueIds = [...new Set(data.jerseyNumbers.map((e) => e.club))];
-
-  // Fetch all club profiles in parallel
-  const clubResults = await Promise.all(uniqueIds.map((clubId) => getClub(clubId)));
-
-  const clubCache = new Map<string, Club>();
-  const nationalTeamIds = new Set<string>();
-
-  for (let i = 0; i < uniqueIds.length; i++) {
-    const club = clubResults[i];
-    if (club) {
-      clubCache.set(uniqueIds[i], club);
-    } else {
-      nationalTeamIds.add(uniqueIds[i]);
+    if (!response.ok) {
+      return { clubs: [], international: [] };
     }
-  }
 
-  // Attempt to resolve national team names from the player's citizenships
-  const nationalTeamCache = await resolveNationalTeams(nationalTeamIds, citizenships);
+    const data: NumberHistoryResponse = await response.json();
+    const citizenships: string[] = profileRes.ok ? ((await profileRes.json()).citizenship ?? []) : [];
+    const uniqueIds = [...new Set(data.jerseyNumbers.map((e) => e.club))];
 
-  // Anything still unresolved gets a generic fallback
-  for (const teamId of nationalTeamIds) {
-    if (!nationalTeamCache.has(teamId)) {
-      nationalTeamCache.set(teamId, {
-        id: teamId,
-        name: 'International',
-        colors: INTERNATIONAL_COLORS,
-      });
+    // Fetch all club profiles in parallel
+    const clubResults = await Promise.all(uniqueIds.map((clubId) => getClub(clubId)));
+
+    const clubCache = new Map<string, Club>();
+    const nationalTeamIds = new Set<string>();
+
+    for (let i = 0; i < uniqueIds.length; i++) {
+      const club = clubResults[i];
+      if (club) {
+        clubCache.set(uniqueIds[i], club);
+      } else {
+        nationalTeamIds.add(uniqueIds[i]);
+      }
     }
-  }
 
-  const clubs: NumberHistory[] = [];
-  const international: NumberHistory[] = [];
+    // Attempt to resolve national team names from the player's citizenships
+    const nationalTeamCache = await resolveNationalTeams(nationalTeamIds, citizenships);
 
-  for (const entry of data.jerseyNumbers) {
-    const club = clubCache.get(entry.club);
-    if (club) {
-      clubs.push({ season: entry.season, club, jerseyNumber: entry.jerseyNumber });
-      continue;
+    // Anything still unresolved gets a generic fallback
+    for (const teamId of nationalTeamIds) {
+      if (!nationalTeamCache.has(teamId)) {
+        nationalTeamCache.set(teamId, {
+          id: teamId,
+          name: 'International',
+          colors: INTERNATIONAL_COLORS,
+        });
+      }
     }
-    const nationalTeam = nationalTeamCache.get(entry.club);
-    if (nationalTeam) {
-      international.push({ season: entry.season, club: nationalTeam, jerseyNumber: entry.jerseyNumber });
-    }
-  }
 
-  return { clubs, international };
+    const clubs: NumberHistory[] = [];
+    const international: NumberHistory[] = [];
+
+    for (const entry of data.jerseyNumbers) {
+      const club = clubCache.get(entry.club);
+      if (club) {
+        clubs.push({ season: entry.season, club, jerseyNumber: entry.jerseyNumber });
+        continue;
+      }
+      const nationalTeam = nationalTeamCache.get(entry.club);
+      if (nationalTeam) {
+        international.push({ season: entry.season, club: nationalTeam, jerseyNumber: entry.jerseyNumber });
+      }
+    }
+
+    return { clubs, international };
+  } catch {
+    return { clubs: [], international: [] };
+  }
 }

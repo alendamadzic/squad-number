@@ -98,8 +98,18 @@ footer {
   z-index: 1;
 }
 
+/* Use a fixed pseudo-element instead of background-attachment: fixed.
+   background-attachment: fixed is not supported on iOS — it falls back to scroll,
+   which causes the background to reposition whenever the page height changes. */
 body {
-  background: url("/background.png") center center / cover no-repeat fixed;
+  background: transparent;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: url("/background.png") center center / cover no-repeat;
+  z-index: -1;
 }
 
 /* ---- Text on grass (outside cards) — must be white ---- */
@@ -119,9 +129,9 @@ a.text-muted-foreground:hover {
   color: #ffffff !important;
 }
 
-/* Header branding on grass */
-header span,
-header a {
+/* Header branding on grass — scope to logo link only, not search dropdown spans */
+header > a,
+header > a span {
   color: #ffffff !important;
   text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
 }

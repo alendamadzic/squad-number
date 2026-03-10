@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import type { KeyboardEvent } from 'react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useTransition } from 'react';
 import { cn } from '@/lib/utils';
 import type { Player } from '@/types';
 import { SearchResults } from './search-results';
@@ -12,6 +12,7 @@ import { usePlayerSearch } from './use-player-search';
 export function PlayerSearch({ className }: { className?: string }) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isPending, startTransition] = useTransition();
 
   const {
     query,
@@ -74,7 +75,9 @@ export function PlayerSearch({ className }: { className?: string }) {
 
   const handlePlayerSelect = (player: Player) => {
     clearSearch();
-    router.push(`/player/${player.id}`);
+    startTransition(() => {
+      router.push(`/player/${player.id}`);
+    });
   };
 
   return (
@@ -85,7 +88,7 @@ export function PlayerSearch({ className }: { className?: string }) {
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={handleKeyDown}
         onBlur={() => setTimeout(closeResults, 150)}
-        isLoading={isLoading}
+        isLoading={isLoading || isPending}
       />
       {isOpen && (
         <SearchResults
