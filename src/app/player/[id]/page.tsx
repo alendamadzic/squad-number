@@ -1,5 +1,3 @@
-import { ChevronLeft } from 'lucide-react';
-import Link from 'next/link';
 import { Suspense } from 'react';
 import { PlayerCard, PlayerCardSkeleton } from './player-card';
 import { PlayerHistory, PlayerHistorySkeleton } from './player-history-server';
@@ -9,14 +7,6 @@ export default function PlayerPage({ params }: { params: Promise<{ id: string }>
 
   return (
     <div className="flex flex-col gap-10">
-      <Link
-        href="/"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit -mt-6"
-      >
-        <ChevronLeft size={14} />
-        Search
-      </Link>
-
       <Suspense fallback={<PlayerCardSkeleton />}>
         <PlayerCard playerId={idPromise} />
       </Suspense>
